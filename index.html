@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบลงนาม ปพ.5 อัตโนมัติ</title>
+    <!-- นำเข้าฟอนต์ตระกูล Sarabun -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'TH SarabunPSK';
+            src: local('TH SarabunPSK'), local('THSarabunPSK');
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'TH SarabunPSK', 'Sarabun', sans-serif;
+            background-color: #cbd5e1;
+            margin: 0;
+            padding: 20px;
+            font-size: 14pt;
+            line-height: 1.25;
+            color: #000;
+        }
+
+        .wrapper {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        /* แผงควบคุมการแก้ไขข้อมูล */
+        .control-box {
+            width: 320px;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 20px;
+            height: fit-content;
+        }
+
+        .control-box h3 {
+            margin: 0 0 15px 0;
+            font-size: 16pt;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 5px;
+        }
+
+        .field-group {
+            margin-bottom: 12px;
+        }
+
+        .field-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: bold;
+            font-size: 13pt;
+        }
+
+        .field-group input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #94a3b8;
+            border-radius: 4px;
+            font-family: 'TH SarabunPSK', 'Sarabun', sans-serif;
+            font-size: 14pt;
+        }
+
+        .btn-print {
+            width: 100%;
+            background-color: #1e3a8a;
+            color: #ffffff;
+            border: none;
+            padding: 10px;
+            font-size: 15pt;
+            font-family: inherit;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .btn-print:hover {
+            background-color: #1e40af;
+        }
+
+        /* หน้าเอกสาร A4 แนวนอน (Landscape 29.7cm x 21.0cm) */
+        .page-landscape {
+            width: 29.7cm;
+            height: 21.0cm;
+            background: #ffffff;
+            /* กำหนดระยะขอบด้านในทุกด้าน 0.25 cm ให้ชิดขอบกระดาษ */
+            padding: 0.25cm; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; /* ดันเนื้อหาลงล่างสุด */
+            margin-bottom: 25px;
+        }
+
+        /* โครงสร้างหน้า 1 */
+        .sig-row-3 {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        /* โครงสร้างหน้า 2 */
+        .page2-grid {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+        }
+
+        /* จัดแต่งระยะห่างคอลัมน์กลาง */
+        .p2-col-mid {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        /* กำหนดการสั่งพิมพ์แบบล็อกขอบกระดาษ 100% */
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 0; /* ล้างค่าขอบของเบราว์เซอร์ทิ้ง เพื่อป้องกันการเยื้อง */
+            }
+
+            body {
+                background: none;
+                padding: 0;
+                margin: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .control-box {
+                display: none !important;
+            }
+
+            .page-landscape {
+                width: 29.7cm !important;
+                height: 21cm !important;
+                padding: 0.25cm !important; /* บังคับให้ระยะขอบเกิดขึ้นจากส่วนนี้เท่านั้น (0.25cm) */
+                margin: 0 !important;
+                box-shadow: none;
+                page-break-after: always;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <!-- แผงแก้ไขข้อมูล -->
+    <div class="control-box">
+        <h3>แก้ไขข้อมูลการลงนาม</h3>
+        
+        <div class="field-group">
+            <label>1. ครูผู้สอน (หน้า 1)</label>
+            <input type="text" id="in_teacher" value="ใส่ชื่อครูผู้สอน" oninput="updateAll()">
+        </div>
+
+        <div class="field-group">
+            <label>2. เจ้าหน้าที่วัดผลกลุ่มสาระฯ</label>
+            <input type="text" id="in_evaluator" value="ใส่ชื่อเจ้าหน้าที่วัดผลกลุ่มสาระฯ" oninput="updateAll()">
+        </div>
+
+        <div class="field-group">
+            <label>3. หัวหน้ากลุ่มสาระการเรียนรู้</label>
+            <input type="text" id="in_head_dept" value="ใส่ชื่อหัวหน้ากลุ่มสาระ" oninput="updateAll()">
+        </div>
+
+        <div class="field-group">
+            <label>4. ผู้อำนวยการโรงเรียน</label>
+            <input type="text" id="in_director" value="ใส่ชื่อผู้อำนวยการ" oninput="updateAll()">
+        </div>
+
+        <div class="field-group">
+            <label>5. วันที่</label>
+            <input type="text" id="in_date" value="ใส่วันที่ เช่น 9 มีนาคม 2569" oninput="updateAll()">
+        </div>
+
+        <button class="btn-print" onclick="window.print()">🖨️ สั่งพิมพ์ / ออกเป็น PDF</button>
+    </div>
+
+    <!-- พื้นที่เอกสาร -->
+    <div class="document-container">
+
+        <!-- ======================= หน้าที่ 1 ======================= -->
+        <div class="page-landscape">
+            <!-- จัดชิด 3 มุม ซ้าย กลาง ขวา -->
+            <div class="sig-row-3">
+                <div style="display: inline-block;">
+                    <div>ลงชื่อ.......................................................</div>
+                    <div style="text-align: center;">(<span class="txt-teacher">นางสาวอรวรรณ์ แพนลำ</span>)</div>
+                    <div style="text-align: center;">ครูผู้สอน</div>
+                </div>
+                <div style="display: inline-block;">
+                    <div>ลงชื่อ.......................................................</div>
+                    <div style="text-align: center;">(<span class="txt-evaluator">นายอภิชา บัวคุ้มภัย</span>)</div>
+                    <div style="text-align: center;">เจ้าหน้าที่วัดผลกลุ่มสาระการเรียนรู้</div>
+                </div>
+                <div style="display: inline-block;">
+                    <div>ลงชื่อ.......................................................</div>
+                    <div style="text-align: center;">(<span class="txt-head-dept">นายนรินทร์ มิถุนดี</span>)</div>
+                    <div style="text-align: center;">หัวหน้ากลุ่มสาระการเรียนรู้</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================= หน้าที่ 2 ======================= -->
+        <div class="page-landscape">
+            <div class="page2-grid">
+                
+                <!-- คอลัมน์ซ้าย (ชิดซ้ายสุด) -->
+                <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                    <!-- ใส่กล่องล่องหนขนาดเท่ากัน เพื่อดันลายเซ็นให้ตรงกับหัวหน้างานวัดผลฯ -->
+                    <div style="visibility: hidden; font-weight: bold; margin-bottom: 15px;">&nbsp;</div>
+                    
+                    <div style="display: inline-block; margin-bottom: 22px;">
+                        <div>ลงชื่อ.......................................................</div>
+                        <div style="text-align: center;">(<span class="txt-evaluator">นายอภิชา บัวคุ้มภัย</span>)</div>
+                        <div style="text-align: center;">เจ้าหน้าที่วัดผลกลุ่มสาระการเรียนรู้</div>
+                    </div>
+                    <div style="display: inline-block;">
+                        <div>ลงชื่อ.......................................................</div>
+                        <div style="text-align: center;">(<span class="txt-head-dept">นายนรินทร์ มิถุนดี</span>)</div>
+                        <div style="text-align: center;">หัวหน้ากลุ่มสาระการเรียนรู้</div>
+                    </div>
+                </div>
+
+                <!-- คอลัมน์กลาง (ชิดระดับเดียวกัน) -->
+                <div class="p2-col-mid">
+                    <div style="font-weight: bold; margin-bottom: 18px;">เรียนเสนอเพื่อโปรดพิจารณา</div>
+                    <div style="margin-bottom: 14px;">ลงชื่อ.......................................................หัวหน้างานวัดผลและประเมินผล</div>
+                    <div style="margin-bottom: 14px;">ลงชื่อ.......................................................หัวหน้างานหลักสูตร</div>
+                    <div>ลงชื่อ.......................................................รองผู้อำนวยการกลุ่มงานบริหารวิชาการ</div>
+                </div>
+
+                <!-- คอลัมน์ขวา (ชิดขวาสุด และจัดรูปแบบตามรูปภาพแนบเป๊ะ) -->
+                <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                    <div style="text-align: left;">
+                        
+                        <!-- ช่องอนุมัติ ตัวหนา ชิดซ้ายให้ตรงกับคำว่า "ลงชื่อ" ด้านล่าง -->
+                         <div style="margin-bottom: 18px;"></div>
+                        <div></div>
+                        <div style="margin-bottom: 18px;"></div>
+                        <div></div>
+                        <div style="font-weight: bold; margin-bottom: 15px;">
+                            (........) อนุมัติ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (........) ไม่อนุมัติ
+                        </div>
+                        
+                        <!-- เส้นลงนาม ชื่อ และ วันที่ (ใช้โครงสร้างตารางเพื่อล็อกการจัดกึ่งกลางใต้เส้นประอย่างสมบูรณ์) -->
+                        <table style="border-collapse: collapse; border: none; padding: 0; margin: 0; white-space: nowrap; font-size: inherit; font-family: inherit;">
+                            <tr>
+                                <td style="vertical-align: top; padding: 0;">ลงชื่อ&nbsp;</td>
+                                <td style="text-align: center; vertical-align: top; padding: 0;">
+                                    ............................................<br>
+                                    (<span class="txt-director">นายวิบูรณ์ ชัยเขื่อนขันธ์</span>)<br>
+                                    <span class="txt-date" style="display: inline-block; margin-top: 4px;">9 มีนาคม 2569</span>
+                                </td>
+                                <td style="vertical-align: top; padding: 0;">ผู้อำนวยการโรงเรียน</td>
+                            </tr>
+                        </table>
+                        
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function updateAll() {
+        const teacher = document.getElementById('in_teacher').value;
+        const evaluator = document.getElementById('in_evaluator').value;
+        const headDept = document.getElementById('in_head_dept').value;
+        const director = document.getElementById('in_director').value;
+        const dateVal = document.getElementById('in_date').value;
+
+        document.querySelectorAll('.txt-teacher').forEach(el => el.textContent = teacher);
+        document.querySelectorAll('.txt-evaluator').forEach(el => el.textContent = evaluator);
+        document.querySelectorAll('.txt-head-dept').forEach(el => el.textContent = headDept);
+        document.querySelectorAll('.txt-director').forEach(el => el.textContent = director);
+        document.querySelectorAll('.txt-date').forEach(el => el.textContent = dateVal);
+    }
+</script>
+
+</body>
+</html>
